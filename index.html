@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Inference for model-agnostic longitudinal variable importance</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Brian D. Williamson, PhD   Kaiser Permanente Washington Health Research Institute " />
+    <script src="index_files/header-attrs-2.26/header-attrs.js"></script>
+    <link href="index_files/tile-view-0.2.6/tile-view.css" rel="stylesheet" />
+    <script src="index_files/tile-view-0.2.6/tile-view.js"></script>
+    <script src="index_files/kePrint-0.0.1/kePrint.js"></script>
+    <link href="index_files/lightable-0.0.1/lightable.css" rel="stylesheet" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, title-slide
+
+.title[
+# Inference for model-agnostic longitudinal variable importance
+]
+.author[
+### Brian D. Williamson, PhD<br> <span style="font-size: 75%;"> Kaiser Permanente Washington Health Research Institute </span>
+]
+.date[
+### 20 November, 2024 <br> <a href = 'https://bdwilliamson.github.io/talks' style = 'color: white;'>https://bdwilliamson.github.io/talks</a>
+]
+
+---
+
+
+
+
+&lt;style type="text/css"&gt;
+.remark-slide-content {
+    font-size: 20px
+    header-h2-font-size: 1.75rem;
+}
+&lt;/style&gt;
+
+## Acknowledgments
+
+This work was done in collaboration with:
+&lt;img src="img/people6.png" width="100%" style="display: block; margin: auto;" /&gt;
+
+---
+
+## Risk prediction and suicide prevention
+
+Several health systems have implemented suicide risk prediction models based on EHR data:
+* designed to predict self-harm in a given window after an index visit (e.g., 90 days)
+* often use data from up to 5 years prior to index visit
+* many achieve area under the ROC curve (AUC) of 0.8 or above
+* can be used at a health care visit to alert clinician .small[[Rossom et al. (2022)]]
+
+.pull-left[
+&lt;img src="img/simon-etal_2018.png" width="100%" style="display: block; margin: auto;" /&gt;
+]
+
+.pull-right[
+&lt;img src="img/suicide_attempt_screening_2024.png" width="100%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+## Risk prediction and suicide prevention
+
+Data include:
+* encounter or billing diagnoses
+* medications prescribed
+* use of specific mental health services
+* self-report questionnaires completed during routine care
+
+---
+
+## Risk prediction and suicide prevention
+
+One element of routine care: the patient health questionnaire 9-item (PHQ-9)
+* first 8 items summed: a measure of depressive symptoms (PHQ-8)
+* ninth item: a separate measure of suicidal ideation (PHQi9)
+
+PHQi9:
+* strong predictor of suicide attempt .small[Kroenke et al. (2001), Simon et al. (2013)]
+* repeated endorsement are at highest risk of suicide attempt .small[Simon et al. (2016)]
+
+&lt;img src="img/kroenke_2001.png" width="75%" style="display: block; margin: auto;" /&gt;
+
+---
+
+## Risk prediction and suicide prevention
+
+People seek mental health care over time.
+
+Challenge: incorporating more recent data .small[[Wolock et al. (2024)]]
+
+Opportunity: identifying variables that have stable or varying importance
+* impacts which variables clinicians measure over patient care trajectory
+
+Scientific question: what is the trajectory of importance of PHQi9 over time? 
+
+Goal: help guide use of PHQi9 in clinical care .small[[Simon et al. (2016, 2024)]]
+
+---
+
+
+## Variable importance: what and why
+
+**What is variable importance?**
+
+--
+
+* .blue1[Quantification of "contributions" of a variable] (or a set of variables)
+
+--
+
+  Traditionally: contribution to .blue2[predictions]
+--
+
+* Useful to distinguish between contributions of predictions...
+--
+
+  * (.blue1[extrinsic importance]) ... .blue1[by a given (possibly black-box) algorithm]
+  .small[ [e.g., Breiman (2001)] ]
+--
+
+  * (.blue1[intrinsic importance]) ... .blue1[by best possible (i.e., oracle) algorithm]
+  .small[ [e.g., van der Laan (2006)] ]
+--
+
+* Our work focuses on .blue1[interpretable, model-agnostic intrinsic importance]
+
+--
+
+Example uses of .blue2[intrinsic] variable importance:
+* is it worth extracting text from notes in the EHR for the sake of predicting hospital readmission?
+
+--
+
+* does the importance of item 9 on the Patient Health Questionnaire in predicting risk of suicide attempt change over time?
+
+
+---
+
+## Case study: ANOVA importance
+
+Data unit `\((X, Y) \sim P_0\)` with:
+* outcome `\(Y\)` 
+* covariate `\(X := (X_1, X_2, \ldots, X_p)\)`
+
+--
+
+**Goals:** 
+* .green[estimate]
+* .blue1[and do inference on]
+
+the importance of `\((X_j: j \in s)\)` in predicting `\(Y\)`
+
+--
+
+How do we typically do this in **linear regression**?
+
+---
+
+## Case study: ANOVA importance
+
+How do we typically do this in **linear regression**?
+
+* Fit a linear regression of `\(Y\)` on `\(X\)` `\(\rightarrow \color{magenta}{\mu_n(X)}\)`
+--
+
+* Fit a linear regression of `\(Y\)` on `\(X_{-s}\)` `\(\rightarrow \color{magenta}{\mu_{n,-s}(X)}\)`
+--
+
+* .green[Compare the fitted values] `\([\mu_n(X_i), \mu_{n,-s}(X_i)]\)`
+
+--
+
+Many ways to compare fitted values, including:
+* ANOVA decomposition
+* Difference in `\(R^2\)`
+
+---
+
+## Case study: ANOVA importance
+
+Difference in `\(R^2\)`: `$$\left[1 - \frac{n^{-1}\sum_{i=1}^n\{Y_i - \mu_n(X_i)\}^2}{n^{-1}\sum_{i=1}^n\{Y_i - \overline{Y}_n\}^2}\right] - \left[1 - \frac{n^{-1}\sum_{i=1}^n\{Y_i - \mu_{n,-s}(X_i)\}^2}{n^{-1}\sum_{i=1}^n\{Y_i - \overline{Y}_n\}^2}\right]$$`
+
+--
+
+&amp;zwj;Inference:
+* Test difference
+* Valid confidence interval
+
+---
+
+## Case study: ANOVA importance
+
+Consider the .blue1[population parameter] `$$\psi_{0,s} = \frac{E_0\{\mu_0(X) - \mu_{0,-s}(X)\}^2}{var_0(Y)}$$`
+
+* `\(\mu_0(x) := E_0(Y \mid X = x)\)` .blue1[(true conditional mean)]
+* `\(\mu_{0,-s}(x) := E_0(Y \mid X_{-s} = x_{-s})\)` 
+
+  [for a vector `\(z\)`, `\(z_{-s}\)` represents `\((z_j: j \notin s)\)`]
+
+--
+
+* .blue2[nonparametric extension] of linear regression-based ANOVA parameter
+
+--
+
+* Can be expressed as a `\(\color{magenta}{\text{difference in population } R^2}\)` values, since `$$\color{magenta}{\psi_{0,s} = \left[1 - \frac{E_0\{Y - \mu_0(X)\}^2}{var_0(Y)}\right] - \left[1 - \frac{E_0\{Y - \mu_{0,-s}(X)\}^2}{var_0(Y)}\right]}$$`
+
+---
+
+## Case study: ANOVA importance
+
+How should we make inference on `\(\psi_{0,s}\)`?
+--
+
+1. construct estimators `\(\mu_n\)`, `\(\mu_{n,-s}\)` of `\(\mu_0\)` and `\(\mu_{0,-s}\)` (e.g., with machine learning)
+--
+
+2. plug in: `$$\psi_{n,s} := \frac{\frac{1}{n}\sum_{i=1}^n \{\mu_n(X_i) - \mu_{n,-s}(X_i)\}^2}{\frac{1}{n}\sum_{i=1}^n (Y_i - \overline{Y}_n)^2}$$`
+--
+
+  but this estimator has .red[asymptotic bias]
+--
+
+3. using influence function-based debiasing [e.g., Pfanzagl (1982)], we get estimator `$$\color{magenta}{\psi_{n,s}^* := \left[1 - \frac{\frac{1}{n}\sum_{i=1}^n\{Y_i - \mu_n(X_i)\}^2}{\frac{1}{n}\sum_{i=1}^n (Y_i - \overline{Y}_n)^2}\right] - \left[1 - \frac{\frac{1}{n}\sum_{i=1}^n\{Y_i - \mu_{n,-s}(X_i)\}^2}{\frac{1}{n}\sum_{i=1}^n (Y_i - \overline{Y}_n)^2}\right]}$$`
+
+--
+
+Under regularity conditions, `\(\psi_{n,s}^*\)` is consistent and nonparametric efficient.
+
+In particular, `\(\sqrt{n}(\psi_{n,s}^* - \psi_{0,s})\)` has a mean-zero normal limit with estimable variance.
+
+[Details in Williamson et al. (2020)]
+
+---
+
+## Generalization to arbitrary measures
+
+ANOVA example suggests a natural generalization:
+--
+
+* Choose a relevant measure of .blue1[predictiveness] for the task at hand
+
+--
+
+  * `\(V(f, P) =\)` .blue1[predictiveness] of function `\(f\)` under sampling from `\(P\)`
+  * `\(\mathcal{F} =\)` rich class of candidate prediction functions
+  * `\(\mathcal{F}_{-s} =\)` {all functions in `\(\mathcal{F}\)` that ignore components with index in `\(s\)`} `\(\subset \mathcal{F}\)`
+  
+--
+
+* Define the oracle prediction functions
+
+  `\(f_0:=\)` maximizer of `\(V(f, P_0)\)` over `\(\mathcal{F}\)` &amp; `\(f_{0,-s}:=\)` maximizer of `\(V(f, P_0)\)` over `\(\mathcal{F}_{-s}\)`
+
+--
+
+Define the importance of `\((X_j: j \in s)\)` relative to `\(X\)` as `$$\color{magenta}{\psi_{0,s} := V(f_0, P_0) - V(f_{0,-s}, P_0) \geq 0}$$`
+
+---
+
+## Generalization to arbitrary measures
+
+Some examples of predictiveness measures:
+
+(arbitrary outcomes)
+
+&amp;zwj; `\(R^2\)`: `\(V(f, P) = 1 - E_P\{Y - f(X)\}^2 / var_P(Y)\)`
+
+--
+
+(binary outcomes)
+
+Classification accuracy: `\(V(f, P) = P\{Y = f(X)\}\)`
+
+&amp;zwj;AUC: `\(V(f, P) = P\{f(X_1) &lt; f(X_2) \mid Y_1 = 0, Y_2 = 1\}\)` for `\((X_1, Y_1) \perp (X_2, Y_2)\)`
+
+Pseudo- `\(R^2\)` : `\(1 - \frac{E_P[Y \log f(X) - (1 - Y)\log \{1 - f(X)\}]}{P(Y = 1)\log P(Y = 1) + P(Y = 0)\log P(Y = 0)}\)`
+
+---
+
+## Generalization to arbitrary measures
+
+How should we make inference on `\(\psi_{0,s}\)`?
+--
+
+1. construct estimators `\(f_n\)`, `\(f_{n,-s}\)` of `\(f_0\)` and `\(f_{0,-s}\)` (e.g., with machine learning)
+--
+
+2. plug in: `$$\psi_{n,s}^* := V(f_n, P_n) - V(f_{n,-s}, P_n)$$`
+  
+  where `\(P_n\)` is the empirical distribution based on the available data
+--
+
+3. Inference can be carried out using influence functions.
+--
+ Why?
+
+We can write `\(V(f_n, P_n) - V(f_{0}, P_0) \approx \color{green}{V(f_0, P_n) - V(f_0, P_0)} + \color{blue}{V(f_n, P_0) - V(f_0, P_0)}\)`
+--
+
+* the `\(\color{green}{\text{green term}}\)` can be studied using the functional delta method
+* the `\(\color{blue}{\text{blue term}}\)` is second-order because `\(f_0\)` maximizes `\(V\)` over `\(\mathcal{F}\)`
+
+--
+
+In other words: `\(f_0\)` and `\(f_{0,-s}\)` **can be treated as known** in studying behavior of `\(\psi_{n,s}^*\)`!
+
+[Details in Williamson et al. (2022)]
+
+---
+
+## Longitudinal VIMs
+
+So far: cross-sectional variable importance
+
+Can we do inference on variable importance longitudinally?
+
+&lt;img src="img/lvim_example.png" width="60%" style="display: block; margin: auto;" /&gt;
+
+---
+
+## Summarizing a VIM trajectory
+
+&amp;zwj;Define: 
+* contiguous set of timepoints `\(\tau := [t_0, \ldots, t_1]\)`
+* variable importance at each time point `\(\psi_{0,s,\tau} = (\psi_{0,s,t_0}, \ldots, \psi_{0,s,t_1})\)`
+
+--
+
+Examples of summary measures over `\(\tau\)`, `\(m(\psi_{0,s,\tau})\)`:
+
+&amp;zwj;Mean: `\(\lVert \tau \rVert^{-1} \sum_{t \in \tau} \psi_{0,s,t}\)`
+
+--
+
+Linear trend: `\((\beta_0, \beta_1) = \text{arg min}_{(\alpha_1, \alpha_2) \in \mathbb{R}^2} \lVert \psi_{0,s,\tau} - \alpha_1  - \tau \alpha_2\rVert_2^2\)`
+
+---
+
+## Summarizing a VIM trajectory
+
+&lt;img src="img/lvim_example.png" width="40%" style="display: block; margin: auto;" /&gt;
+
+| Summary | VIM 1 | VIM 2 | VIM 3 |
+|:-------:--------:-------:-------|
+| Mean    | 0.3   | 0.8   | 0.06  |
+| Slope   | 0.1   | 0     | -0.05 |
+
+---
+
+## Summarizing a VIM trajectory
+
+How should we make inference on `\(m(\psi_{0,s,\tau})\)`?
+--
+
+1. construct estimators `\(f_{n,t}\)`, `\(f_{n,-s,t}\)` of `\(f_{0,t}\)`, `\(f_{0,-s,t}\)` (e.g., with machine learning)
+
+--
+
+2. plug in: `\(\psi_{n,s,t}^* = V(f_{n,s,t}, P_{n,s,t}) - V(f_{n,-s,t}, P_{n,s,t})\)` 
+
+--
+
+3. plug in: `$$m_{n,s}^* := m(\psi_{n,s,\tau}^*)$$`
+
+--
+
+4. Inference can be carried out using influence functions.
+
+[Details in Williamson et al. (2024)]
+
+---
+
+## Key considerations
+
+.blue1[Reference group of variables]
+* importance of `\((X_j: j \in s)\)` relative to `\(X\)`: `$$\color{magenta}{\psi_{0,s} := V(f_0, P_0) - V(f_{0,-s}, P_0) \geq 0}$$`
+* set of variables `\(s\)` changes interpretation!
+* common choices of `\(s\)`:
+  * a _base set_ of variables to always adjust for (e.g., confounders) -&gt; "add-in" VIM
+  * all variables except the variable(s) of interest -&gt; "leave-out" VIM
+
+.blue2[Correlation over time]
+* updated theory handles outcome and feature correlation over time
+
+---
+
+## VIMs for predictors of suicide risk
+
+Data gathered from electronic health record on sample of 343,950 visits made by 184,782 people
+
+Key variables: .small[ Jacobs et al. (2010) ]
+* Patient Health Questionnaire (PHQ)
+  * PHQ-8 total score (depressive symptoms) 
+  * PHQi9 (suicidal ideation)
+* Prior recorded self-harm
+* Age
+* Sex (sex assigned at birth)
+
+Outcome: suicide attempt in 90 days following mental health visit
+
+Sampled one visit per person at six possible measurement times over 18 months:
+* 99,991 people had only one visit
+* 4,093 people had six visits
+* Rate of suicide attempt approximately 0.5% at all time points
+
+---
+
+## VIMs for predictors of suicide risk
+
+&amp;zwj;Goal: estimate VIMs for PHQi9 and prior recorded self-harm
+
+Variable sets considered:
+1. no variables
+2. PHQi9 alone
+3. age and sex (base set)
+4. age, sex, and PHQi9
+5. age, sex, and prior self-harm
+6. age, sex, prior self-harm, and PHQi9
+
+--
+
+Estimate prediction functions at each time point using the super learner [ van der Laan et al. (2007) ]
+
+---
+
+## VIMs for predictors of suicide risk
+
+&lt;img src="img/vims_of_interest_over_time_presentation.png" width="100%" style="display: block; margin: auto;" /&gt;
+
+---
+
+## VIMs for predictors of suicide risk
+
+&lt;table class="table" style="font-size: 14px; color: black; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; Summary &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; Comparison &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; Estimate &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; SE &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; 95% CI &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; p-value &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Mean &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; PHQi9 versus no variables &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.132 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.019 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; [0.096, 0.169] &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &amp;lt; 0.001 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Mean &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; PHQi9 versus age and sex &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.040 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.012 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; [0.016, 0.064] &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &amp;lt; 0.001 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Mean &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; PHQi9 versus age, sex, and prior self-harm variables &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.033 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.012 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; [0.010, 0.056] &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.002 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Trend: slope &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; PHQi9 versus no variables &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.007 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.011 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; [-0.014, 0.028] &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.507 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Trend: slope &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; PHQi9 versus age and sex &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.005 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.007 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; [-0.019, 0.009] &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.486 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Trend: slope &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; PHQi9 versus age, sex, and prior self-harm variables &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.005 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.007 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; [-0.018, 0.008] &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.468 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+---
+
+## VIMs for predictors of suicide risk
+
+Overall conclusions:
+* Prediction model performance stable over time
+* PHQi9 is stably important over time
+  * large mean importance
+  * slope near zero
+  
+Implication: PHQi9 should be obtained and focused on in all visits
+
+---
+
+## Closing thoughts
+
+.blue1[Population-based] variable importance:
+* wide variety of meaningful measures
+* simple estimators
+* machine learning okay
+* valid inference, testing
+* extension to longitudinal VIMs
+* extension to correlated features .small[ (Williamson and Feng, 2020) ]
+
+Check out the software:
+
+* R packages [`vimp`](https://github.com/bdwilliamson/vimp), [`lvimp`](https://github.com/bdwilliamson/lvimp)
+* [Python package `vimpy`](https://github.com/bdwilliamson/vimpy)
+
+&lt;svg viewBox="0 0 496 512" style="height:1em;position:relative;display:inline-block;top:.1em;" xmlns="http://www.w3.org/2000/svg"&gt;  &lt;path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"&gt;&lt;/path&gt;&lt;/svg&gt; https://github.com/bdwilliamson | &lt;svg viewBox="0 0 496 512" style="height:1em;position:relative;display:inline-block;top:.1em;" xmlns="http://www.w3.org/2000/svg"&gt;  &lt;path d="M336.5 160C322 70.7 287.8 8 248 8s-74 62.7-88.5 152h177zM152 256c0 22.2 1.2 43.5 3.3 64h185.3c2.1-20.5 3.3-41.8 3.3-64s-1.2-43.5-3.3-64H155.3c-2.1 20.5-3.3 41.8-3.3 64zm324.7-96c-28.6-67.9-86.5-120.4-158-141.6 24.4 33.8 41.2 84.7 50 141.6h108zM177.2 18.4C105.8 39.6 47.8 92.1 19.3 160h108c8.7-56.9 25.5-107.8 49.9-141.6zM487.4 192H372.7c2.1 21 3.3 42.5 3.3 64s-1.2 43-3.3 64h114.6c5.5-20.5 8.6-41.8 8.6-64s-3.1-43.5-8.5-64zM120 256c0-21.5 1.2-43 3.3-64H8.6C3.2 212.5 0 233.8 0 256s3.2 43.5 8.6 64h114.6c-2-21-3.2-42.5-3.2-64zm39.5 96c14.5 89.3 48.7 152 88.5 152s74-62.7 88.5-152h-177zm159.3 141.6c71.4-21.2 129.4-73.7 158-141.6h-108c-8.8 56.9-25.6 107.8-50 141.6zM19.3 352c28.6 67.9 86.5 120.4 158 141.6-24.4-33.8-41.2-84.7-50-141.6h-108z"&gt;&lt;/path&gt;&lt;/svg&gt; https://bdwilliamson.github.io
+
+---
+
+## References
+
+* .small[ Breiman L. 2001. Random forests. _Machine Learning_.]
+* .small[ Kroenke et al. 2001. The PHQ-9: Validity of a brief depression severity measure. _Journal of General Internal Medicine_. ]
+* .small[ Rossom et al. 2022. Connecting research and practice: implementation of suicide prevention strategies in learning health care systems. _Psychiatric Services_.]
+* .small[ Simon et al. 2013. Does response on the PHQ-9 depression questionnaire predict subsequent suicide attempt or suicide death? _Psychiatric Services_.]
+* .small[ Simon et al. 2016. Risk of suicide attempt and suicide death following completion of the patient health questionnaire depression module in community practice. _The Journal of Clinical Psychiatry_.]
+* .small[ Simon et al. 2024. Stability of suicide risk prediction models during changes in health care delivery. _Psychiatric Services_.]
+* .small[ van der Laan MJ. 2006. Statistical inference for variable importance. _The International Journal of Biostatistics_.]
+* .small[ van der Laan MJ, Polley EC, and Hubbard AE. 2007. Super Learner. _Statistical Applications in Genetics and Molecular Biology_. ]
+
+---
+
+## References
+* .small[ Williamson BD, Gilbert P, Carone M, and Simon N. 2020. Nonparametric variable importance assessment using machine learning techniques (+ rejoinder to discussion). _Biometrics_. ]
+* .small[ Williamson BD, Gilbert P, Simon N, and Carone M. 2022. A general framework for inference on algorithm-agnostic variable importance. _Journal of the American Statistical Association_. ]
+* .small[ Williamson BD, Moodie EEM, Simong GE, Rossom RC, and Shortreed SM. 2024. Inference on summaries of a model-agnostic longitudinal variable importance trajectory. _arXiv https://arxiv.org/pdf/2311.01638.pdf_. ]
+* .small[ Williamson BD and Feng J. 2020. Efficient nonparametric statistical inference on population feature importance using Shapley values. _ICML_. ]
+* .small[ Wolock CJ et al. 2024. Importance of variables from different time frames for predicting self-harm using health system data. _Journal of Biomedical Informatics_. ]
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "tomorrow-night-blue",
+"highlightLanguage": "rmarkdown",
+"highlightLines": false,
+"slideNumberFormat": "%current%",
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
