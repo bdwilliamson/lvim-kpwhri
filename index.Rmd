@@ -1,7 +1,7 @@
 ---
 title: "Inference for model-agnostic longitudinal variable importance"
 author: "Brian D. Williamson, PhD<br> <span style= 'font-size: 75%;'> Kaiser Permanente Washington Health Research Institute </span>"
-date: "20 November, 2024 <br> <a href = 'https://bdwilliamson.github.io/talks' style = 'color: white;'>https://bdwilliamson.github.io/talks</a>"
+date: "27 October, 2025 <br> <a href = 'https://bdwilliamson.github.io/talks' style = 'color: white;'>https://bdwilliamson.github.io/talks</a>"
 output:
   xaringan::moon_reader:
     css: xaringan-themer.css
@@ -506,11 +506,17 @@ Implication: PHQi9 should be obtained and focused on in all visits
 * extension to longitudinal VIMs
 * extension to correlated features .small[ (Williamson and Feng, 2020) ]
 
+.pull-left[
 Check out the software:
-
 * R packages [`vimp`](https://github.com/bdwilliamson/vimp), [`lvimp`](https://github.com/bdwilliamson/lvimp)
 * [Python package `vimpy`](https://github.com/bdwilliamson/vimpy)
-
+]
+.pull-right[
+Check out the paper:
+```{r qrcode, echo = FALSE, fig.show = "hold", out.width="40%", fig.align = "center"}
+knitr::include_graphics("img/qrcode_lvim_arxiv.png")
+```
+]
 `r icons::fontawesome('github')` https://github.com/bdwilliamson | `r icons::fontawesome('globe')` https://bdwilliamson.github.io
 
 ---
