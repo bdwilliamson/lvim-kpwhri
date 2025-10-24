@@ -105,8 +105,8 @@ One element of routine care: the patient health questionnaire 9-item (PHQ-9)
 * ninth item: a separate measure of suicidal ideation (PHQi9)
 
 PHQi9:
-* strong predictor of suicide attempt .small[Kroenke et al. (2001), Simon et al. (2013)]
-* repeated endorsement are at highest risk of suicide attempt .small[Simon et al. (2016)]
+* strong predictor of suicide attempt .small[[Kroenke et al. (2001), Simon et al. (2013)]]
+* repeated endorsement are at highest risk of suicide attempt .small[[Simon et al. (2016)]]]
 
 ```{r kroenke2001, echo = FALSE, fig.show="hold", out.width="75%", fig.align="center"}
 knitr::include_graphics("img/kroenke_2001.PNG")
@@ -429,7 +429,7 @@ How should we make inference on $m(\psi_{0,s,\tau})$?
 
 Data gathered from electronic health record on sample of 343,950 visits made by 184,782 people
 
-Key variables: .small[ Jacobs et al. (2010) ]
+Key variables: .small[[Jacobs et al. (2010)]]
 * Patient Health Questionnaire (PHQ)
   * PHQ-8 total score (depressive symptoms) 
   * PHQi9 (suicidal ideation)
@@ -504,7 +504,7 @@ Implication: PHQi9 should be obtained and focused on in all visits
 * machine learning okay
 * valid inference, testing
 * extension to longitudinal VIMs
-* extension to correlated features .small[ (Williamson and Feng, 2020) ]
+* extension to correlated features .small[ [Williamson and Feng, 2020] ]
 
 .pull-left[
 Check out the software:

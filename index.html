@@ -79,8 +79,8 @@ One element of routine care: the patient health questionnaire 9-item (PHQ-9)
 * ninth item: a separate measure of suicidal ideation (PHQi9)
 
 PHQi9:
-* strong predictor of suicide attempt .small[Kroenke et al. (2001), Simon et al. (2013)]
-* repeated endorsement are at highest risk of suicide attempt .small[Simon et al. (2016)]
+* strong predictor of suicide attempt .small[[Kroenke et al. (2001), Simon et al. (2013)]]
+* repeated endorsement are at highest risk of suicide attempt .small[[Simon et al. (2016)]]]
 
 &lt;img src="img/kroenke_2001.PNG" width="75%" style="display: block; margin: auto;" /&gt;
 
@@ -379,8 +379,8 @@ How should we make inference on `\(m(\psi_{0,s,\tau})\)`?
 
 .blue1[Reference group of variables]
 * importance of `\((X_j: j \in s)\)` relative to `\(X\)`: `$$\color{magenta}{\psi_{0,s} := V(f_0, P_0) - V(f_{0,-s}, P_0) \geq 0}$$`
-* set of variables `\(s\)` changes interpretation!
-* common choices of `\(s\)`:
+* set of variables `\(X_{-s}\)` changes interpretation!
+* common choices of `\(X_{-s}\)`:
   * a _base set_ of variables to always adjust for (e.g., confounders) -&gt; "add-in" VIM
   * all variables except the variable(s) of interest -&gt; "leave-out" VIM
 
@@ -393,7 +393,7 @@ How should we make inference on `\(m(\psi_{0,s,\tau})\)`?
 
 Data gathered from electronic health record on sample of 343,950 visits made by 184,782 people
 
-Key variables: .small[ Jacobs et al. (2010) ]
+Key variables: .small[[Jacobs et al. (2010)]]
 * Patient Health Questionnaire (PHQ)
   * PHQ-8 total score (depressive symptoms) 
   * PHQi9 (suicidal ideation)
@@ -521,7 +521,7 @@ Implication: PHQi9 should be obtained and focused on in all visits
 * machine learning okay
 * valid inference, testing
 * extension to longitudinal VIMs
-* extension to correlated features .small[ (Williamson and Feng, 2020) ]
+* extension to correlated features .small[ [Williamson and Feng, 2020] ]
 
 .pull-left[
 Check out the software:
