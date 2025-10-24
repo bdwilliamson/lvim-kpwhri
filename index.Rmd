@@ -415,8 +415,8 @@ How should we make inference on $m(\psi_{0,s,\tau})$?
 
 .blue1[Reference group of variables]
 * importance of $(X_j: j \in s)$ relative to $X$: $$\color{magenta}{\psi_{0,s} := V(f_0, P_0) - V(f_{0,-s}, P_0) \geq 0}$$
-* set of variables $s$ changes interpretation!
-* common choices of $s$:
+* set of variables $X_{-s}$ changes interpretation!
+* common choices of $X_{-s}$:
   * a _base set_ of variables to always adjust for (e.g., confounders) -> "add-in" VIM
   * all variables except the variable(s) of interest -> "leave-out" VIM
 
